@@ -19,8 +19,9 @@ function! s:echo_error(mess) abort
     echoerr '[Plugin: buzuo.vim]: ' . a:mess
 endfunction
 
-function! s:quote(str) abort
-    return "'" . escape(a:str, "'\"") . "'"
+function! s:quote(str, ...) abort
+    let l:wrap = get(a:, '1', "'")
+    return l:wrap . escape(a:str, "'\"") . l:wrap
 endfunction
 
 "system wrap return -1 if occurred error
@@ -51,16 +52,17 @@ endfunction
 
 "create database
 function! buzuo#create_data_base() abort
-    "sql to create table
-    let l:sql_create_table = 'CREATE TABLE IF NOT EXISTS todo('
+    "sql to create table type [now, later, longterm]
+    let l:sql_create_table = 'CREATE TABLE IF NOT EXISTS buzuo('
                 \. 'id INTEGER PRIMARY KEY AUTOINCREMENT,'
                 \. 'create_time INTEGER,'
                 \. 'modify_time INTEGER,'
                 \. 'status,'
                 \. 'tag,'
+                \. 'type,'
                 \. 'title,'
-                \. 'content,'
-                \')'
+                \. 'content'
+                \. ')'
 
     "get database path
     let l:p = buzuo#get_database_path()
@@ -86,16 +88,58 @@ function! buzuo#create_data_base() abort
     endif
 endfunction
 
+"insert new item
+function! buzuo#insert_item(tag, type, title) abort
+    let l:now_time = localtime()
+    let l:sql_insert_item = '"INSERT INTO '
+                \. 'buzuo(create_time,modify_time,status,tag,type,title)'
+                \. 'VALUES(%s,%s,%s,%s,%s,%s)"'
+    let l:sql_insert_item = printf(l:sql_insert_item,
+                \ l:now_time,
+                \ l:now_time,
+                \ s:quote('pending'),
+                \ s:quote(a:tag),
+                \ s:quote(a:type),
+                \ s:quote(a:title),
+                \)
+    let l:cmd_insert_item = join([
+                \ s:sqlite,
+                \ buzuo#get_database_path(),
+                \ l:sql_insert_item,
+                \], ' ')
+    if s:system(l:cmd_insert_item) !=# -1
+        echo 'done'
+    endif
+endfunction
+
+"update item
+function! buzuo#update_item(id, field, value) abort
+    let l:now_time = localtime()
+    let l:sql_insert_item = '"UPDATE buzuo SET modify_time=%s, %s=%s where id = %s"'
+    let l:sql_insert_item = printf(l:sql_insert_item,
+                \ l:now_time,
+                \ a:field,
+                \ s:quote(a:value),
+                \ a:id)
+    let l:cmd_update_item = join([
+                \ s:sqlite,
+                \ buzuo#get_database_path(),
+                \ l:sql_insert_item,
+                \], ' ')
+    if s:system(l:cmd_update_item) !=# -1
+        echo 'done'
+    endif
+endfunction
+
 "get field
-function! buzuo#get_field(field) abort
+function! buzuo#get_distinct_field(field) abort
     "get tags
-    let l:sql_query_tags = 'SELECT DISTINCT(' . a:field . ') FROM todo'
+    let l:sql_query_tags = 'SELECT DISTINCT(' . a:field . ') FROM buzuo'
     let l:cmd_get_tags = join([
                 \ s:sqlite,
                 \ buzuo#get_database_path(),
                 \ s:quote(l:sql_query_tags),
                 \], ' ')
-    echo l:cmd_get_tags
     let l:output = s:system(l:cmd_get_tags)
     if l:output ==# -1
         return ''
