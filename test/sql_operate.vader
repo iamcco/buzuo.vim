@@ -1,0 +1,96 @@
+Execute (init script):
+  "source vim script
+  execute 'source ' . expand('%:p:h') . '/autoload/buzuo.vim'
+  if executable('sqlite')
+    let b:sqlite = 'sqlite'
+  else
+    let b:sqlite = 'sqlite3'
+  endif
+  " trim string
+  function! Trim(str) abort
+      return substitute(a:str, '\v(^[\n\r \t]*|[\n\r \t]*$)', '', 'g')
+  endfunction
+
+Execute (get database path):
+  let b:database_path_expect = '\v^(\/|\a\:).*\.buzuo/buzuo\.database'
+
+  "test relative path
+  let g:buzuo_database_path = './.buzuo/buzuo.database'
+  let b:database_path = buzuo#get_database_path()
+
+  Assert b:database_path =~? b:database_path_expect
+
+  " test `~` start with path
+  let g:buzuo_database_path = '~/.buzuo/buzuo.database'
+  let b:database_path = buzuo#get_database_path()
+
+  Assert b:database_path =~? b:database_path_expect
+
+  " test `/` start with path
+  let g:buzuo_database_path = '/path/to/.buzuo/buzuo.database'
+  let b:database_path = buzuo#get_database_path()
+
+  Assert b:database_path =~? b:database_path_expect
+
+  " test `c:` start with path
+  let g:buzuo_database_path = 'c:/path/to/.buzuo/buzuo.database'
+  let b:database_path = buzuo#get_database_path()
+
+  Assert b:database_path =~? b:database_path_expect
+
+Execute (crate database):
+  " set database filename
+  let g:buzuo_database_path = tempname()
+  " create database
+  silent call buzuo#create_data_base()
+
+  " expect schema
+  let b:expect_schema = 'CREATE TABLE buzuo'
+    \. '(id INTEGER PRIMARY KEY AUTOINCREMENT,'
+    \. 'create_time INTEGER,modify_time INTEGER,'
+    \. 'status,tag,type,title,content);'
+
+  " get schema of database
+  let b:buzuo_schema = system(join([
+              \ b:sqlite,
+              \ buzuo#get_database_path(),
+              \ '".schema buzuo"'
+              \], ' '))
+
+  AssertEqual b:expect_schema, Trim(b:buzuo_schema)
+
+Execute (insert item):
+  "insert item: tag: word, type: now, title: test insert
+  silent call buzuo#insert_item('word', 'now', 'test insert')
+
+  let b:sql_select = system(join([
+        \ b:sqlite,
+        \ buzuo#get_database_path(),
+        \ '"select id,tag,type,title from buzuo"'
+        \], ' '))
+  let b:sql_select_expect = '1|word|now|test insert'
+
+  AssertEqual b:sql_select_expect, Trim(b:sql_select)
+
+Execute (update item):
+  "update title field from `test insert` to `test update title`
+  silent call buzuo#update_item(1, 'title', 'test update title')
+
+  let b:sql_select = system(join([
+        \ b:sqlite,
+        \ buzuo#get_database_path(),
+        \ '"select title from buzuo where id = 1"'
+        \], ' '))
+  let b:sql_select_expect = 'test update title'
+
+  AssertEqual b:sql_select_expect, Trim(b:sql_select)
+
+Execute (get distinct field):
+  "insert new tag: personal
+  silent call buzuo#insert_item('personal', 'now', 'test insert')
+  "update title field from `test insert` to `test update title`
+  let b:distinct_field = buzuo#get_distinct_field('tag')
+
+  let b:distinct_field_expect = "word[\n\r]*personal"
+
+  Assert Trim(b:distinct_field) =~? b:distinct_field_expect

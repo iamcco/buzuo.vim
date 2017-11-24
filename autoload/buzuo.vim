@@ -52,7 +52,7 @@ function! buzuo#get_database_path() abort
     endif
     let l:p = g:buzuo_database_path
     "check absolute path
-    if l:p !~# '\v\/.*' && l:p !~# '\v\a:.*' && l:p !~# '\v\~\/.*'
+    if l:p !~# '\v^\/.*$' && l:p !~# '\v^\a:.*$' && l:p !~# '\v^\~\/.*$'
         let l:p = expand('~') . '/' . g:buzuo_database_path
     elseif l:p =~# '\v\~\/.*'
         let l:p = expand(l:p)
