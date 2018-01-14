@@ -104,10 +104,15 @@ class Source(Base):
         self.vim.command(r'syntax match deniteSource__BuzuoId /\v^.*%7c/ contained ' +
                          r'containedin=deniteSource__BuzuoHeader')
 
-def addDBConnect(action):
+def doNothingWithoutId(action):
     def wrapper(self, context):
         if context['targets'][0].get('source__id', None) is None:
             return
+        return action(self, context)
+    return wrapper
+
+def addDBConnect(action):
+    def wrapper(self, context):
         conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
         res = action(self, context, conn)
         conn.close()
@@ -149,7 +154,7 @@ class Kind(BaseKind):
         if not len(the_type):
             return
         args = target['source__args']
-        category = str(args.get(0, 'now'))
+        category = str(args.get(0, 'work'))
         status = str(args.get(2, 'pending'))
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, the_type, status]},
@@ -159,12 +164,13 @@ class Kind(BaseKind):
         target = context['targets'][0]
         status = 'done' if target['source__status'] == 'pending' else 'pending'
         args = target['source__args']
-        category = str(args.get(0, 'now'))
-        the_type = str(args.get(1, 'pending'))
+        category = str(args.get(0, 'work'))
+        the_type = str(args.get(1, 'now'))
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
 
+    @doNothingWithoutId
     @addDBConnect
     def action_toggle(self, context, conn):
         cursor = conn.cursor()
@@ -176,9 +182,9 @@ class Kind(BaseKind):
         cursor.executemany('UPDATE buzuo SET modify_time = ?, status = ? WHERE id = ?', todos)
         conn.commit()
 
+    @doNothingWithoutId
     @addDBConnect
     def action_edit(self, context, conn):
-        conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
         cursor = conn.cursor()
         target = context['targets'][0]
         title = util.input(self.vim, context, 'Change to: ', target['source__title'])
@@ -197,9 +203,9 @@ class Kind(BaseKind):
                 (title, category, the_type, target['source__id']))
         conn.commit()
 
+    @doNothingWithoutId
     @addDBConnect
     def action_delete(self, context, conn):
-        conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
         cursor = conn.cursor()
         cursor.executemany('DELETE FROM buzuo WHERE id = ?',
                 [(x['source__id'],) for x in context['targets']])
@@ -207,7 +213,6 @@ class Kind(BaseKind):
 
     @addDBConnect
     def action_add(self, context, conn):
-        conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
         title = util.input(self.vim, context, 'Enter title: ')
         if not len(title):
             return
