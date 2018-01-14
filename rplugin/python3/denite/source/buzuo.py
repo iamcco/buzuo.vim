@@ -52,8 +52,8 @@ class Source(Base):
         the_type = str(args.get(1, 'now'))
         status = str(args.get(2, 'pending'))
         candidata = []
-        cursor.execute('select * from buzuo \
-                where status = ? and category = ? and type = ? order by id desc',
+        cursor.execute('SELECT * FROM buzuo \
+                WHERE status = ? and category = ? and type = ? ORDER BY id desc',
                 (status, category, the_type))
         time_now = time.time()
         for row in cursor:
@@ -104,32 +104,35 @@ class Kind(BaseKind):
     def __init__(self, vim):
         super().__init__(vim)
 
+        self.name = 'buzuo'
         self.default_action = 'toggle'
         self.persist_actions = ['toggle', 'edit', 'delete', 'add']
         self.redraw_actions = ['toggle', 'edit', 'delete', 'add']
-        self.name = 'buzuo'
 
     def action_change_category(self, context):
         target = context['targets'][0]
         category = util.input(self.vim, context, 'Enter category: ')
         if not len(category):
             return
-        self.vim.command('Denite buzuo:%s:%s:%s' %
-                (category, target['source__type'], target['source__status']))
+        context['sources_queue'].append([
+            {'name': 'buzuo', 'args': [category, target['source__type'], target['source__status']]},
+            ])
 
     def action_change_type(self, context):
         target = context['targets'][0]
         the_type = util.input(self.vim, context, 'Enter type: ')
         if not len(the_type):
             return
-        self.vim.command('Denite buzuo:%s:%s:%s' %
-                (target['source__category'], the_type, target['source__status']))
+        context['sources_queue'].append([
+            {'name': 'buzuo', 'args': [target['source__category'], the_type, target['source__status']]},
+            ])
 
     def action_change_status(self, context):
         target = context['targets'][0]
         status = 'done' if target['source__status'] == 'pending' else 'pending'
-        self.vim.command('Denite buzuo:%s:%s:%s' %
-                (target['source__category'], target['source__type'], status))
+        context['sources_queue'].append([
+            {'name': 'buzuo', 'args': [target['source__category'], target['source__type'], status]},
+            ])
 
     @addDBConnect
     def action_toggle(self, context, conn):
