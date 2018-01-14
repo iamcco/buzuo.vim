@@ -37,10 +37,25 @@ if !exists('g:buzuo_type_default')
 endif
 
 function! s:get_complete_candidate(A, L, P) abort
+    if a:A =~# '\v^add(:[^:]*)?$'
+        let l:a = split(a:A, ':')[0]
+        let l:res = []
+        for l:category in g:buzuo_category_candidate
+            call add(l:res, l:a . ':' . l:category)
+        endfor
+        return join(l:res, "\n")
+    elseif a:A =~# '\v^add:[^:]*:[^:]*$'
+        let l:a = substitute(a:A, '\v^(add:[^:]*):[^:]*$', '\1', 'g')
+        let l:res = []
+        for l:type in g:buzuo_type_candidate
+            call add(l:res, l:a . ':' . l:type)
+        endfor
+        return join(l:res, "\n")
+    endif
     return join([ 'init', 'add', 'list' ], "\n")
 endfunction
 
-command! -nargs=1 -complete=custom,s:get_complete_candidate Buzuo :call buzuo#start(<q-args>)
+command! -nargs=* -complete=custom,s:get_complete_candidate Buzuo :call buzuo#start(<q-args>)
 
 let s:save_cpoptions = &cpoptions
 set cpoptions&vim

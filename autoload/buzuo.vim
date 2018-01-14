@@ -149,7 +149,11 @@ endfunction
 " start
 function! buzuo#start(args) abort
     try
-        let l:args = split(a:args, ':')
+        let l:args = a:args
+        if l:args ==# ''
+            let l:args = 'list'
+        endif
+        let l:args = split(l:args, ':')
         let l:type = l:args[0]
         let l:args = [join(l:args[1:-1], ':')]
         call call(function('buzuo#' . l:type), l:args)
