@@ -167,11 +167,17 @@ class Kind(BaseKind):
     @addDBConnect
     def action_add(self, context, conn):
         conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
-        category = util.input(self.vim, context, 'Enter category: ')
-        the_type = util.input(self.vim, context, 'Enter type: ')
         title = util.input(self.vim, context, 'Enter title: ')
-        if not len(title) or not len(category) or not len(the_type):
+        if not len(title):
             return
+        category = util.input(
+                self.vim, context, 'Enter category: ', '', 'custom,buzuo#add_category_candidate')
+        if not len(category):
+            category = self.vim.eval('g:buzuo_category_default')
+        the_type = util.input(
+                self.vim, context, 'Enter type: ', '', 'custom,buzuo#add_type_candidate')
+        if not len(the_type):
+            the_type = self.vim.eval('g:buzuo_type_default')
         cursor = conn.cursor()
         time_now = int(time.time())
         cursor.execute('INSERT INTO buzuo \
