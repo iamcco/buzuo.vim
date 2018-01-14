@@ -45,17 +45,30 @@ class Source(Base):
         context['__db_conn'] = None
 
     def gather_candidates(self, context):
+        sql = 'SELECT * FROM buzuo WHERE {s[category]} and {s[type]} and {s[status]} ORDER BY id desc'
+        format_sql = {
+                'category': 'category = ?',
+                'type': 'type = ?',
+                'status': 'status = ?',
+                }
         conn = context['__db_conn']
         cursor = conn.cursor()
         args = dict(enumerate(context['args']))
         category = str(args.get(0, 'work'))
         the_type = str(args.get(1, 'now'))
         status = str(args.get(2, 'pending'))
-        candidata = []
-        cursor.execute('SELECT * FROM buzuo \
-                WHERE status = ? and category = ? and type = ? ORDER BY id desc',
-                (status, category, the_type))
+        if category == '/':
+            format_sql['category'] = '1 = ?'
+            category = 1
+        if the_type == '/':
+            format_sql['type'] = '1 = ?'
+            the_type = 1
+        if status == '/':
+            format_sql['status'] = '1 = ?'
+            status = 1
+        cursor.execute(sql.format(s=format_sql), (category, the_type, status))
         time_now = time.time()
+        candidata = []
         for row in cursor:
             candidata.append({
                 'word': '%-4d [%s] %s' % (row[0], timeago(time_now, row[1]), row[6]),
@@ -65,6 +78,7 @@ class Source(Base):
                 'source__type': row[5],
                 'source__title': row[6],
                 'source__content': row[7],
+                'source__args': args,
                 })
         if not len(candidata):
             candidata.append({
@@ -72,6 +86,7 @@ class Source(Base):
                 'source__status': status,
                 'source__category': category,
                 'source__type': the_type,
+                'source__args': args,
                 })
         return candidata
 
@@ -109,14 +124,22 @@ class Kind(BaseKind):
         self.persist_actions = ['toggle', 'edit', 'delete', 'add']
         self.redraw_actions = ['toggle', 'edit', 'delete', 'add']
 
+    def action_list_all(self, context):
+        context['sources_queue'].append([
+            {'name': 'buzuo', 'args': ['/', '/', '/']},
+            ])
+
     def action_switch_category(self, context):
         target = context['targets'][0]
         category = util.input(
                 self.vim, context, 'Enter category: ', '', 'custom,buzuo#add_category_candidate')
         if not len(category):
             return
+        args = target['source__args']
+        the_type = str(args.get(1, 'now'))
+        status = str(args.get(2, 'pending'))
         context['sources_queue'].append([
-            {'name': 'buzuo', 'args': [category, target['source__type'], target['source__status']]},
+            {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
 
     def action_switch_type(self, context):
@@ -125,15 +148,21 @@ class Kind(BaseKind):
                 self.vim, context, 'Enter type: ', '', 'custom,buzuo#add_type_candidate')
         if not len(the_type):
             return
+        args = target['source__args']
+        category = str(args.get(0, 'now'))
+        status = str(args.get(2, 'pending'))
         context['sources_queue'].append([
-            {'name': 'buzuo', 'args': [target['source__category'], the_type, target['source__status']]},
+            {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
 
     def action_switch_status(self, context):
         target = context['targets'][0]
         status = 'done' if target['source__status'] == 'pending' else 'pending'
+        args = target['source__args']
+        category = str(args.get(0, 'now'))
+        the_type = str(args.get(1, 'pending'))
         context['sources_queue'].append([
-            {'name': 'buzuo', 'args': [target['source__category'], target['source__type'], status]},
+            {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
 
     @addDBConnect
