@@ -4,6 +4,7 @@
 # License: MIT license
 # ============================================================================
 
+import os
 import time
 import sqlite3
 from denite import util
@@ -38,6 +39,8 @@ class Source(Base):
 
     def on_init(self, context):
         database = self.vim.call('buzuo#get_database_path')
+        if not os.path.isfile(database):
+            raise Exception('数据库文件不存在，请执行 :Buzuo init')
         context['__db_conn'] = sqlite3.connect(database)
 
     def on_close(self, context):
@@ -82,7 +85,7 @@ class Source(Base):
                 })
         if not len(candidata):
             candidata.append({
-                'word': '1    list is empty :)',
+                'word': '1    list is empty ╮（╯＿╰）╭',
                 'source__status': status,
                 'source__category': category,
                 'source__type': the_type,
