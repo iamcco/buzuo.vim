@@ -66,6 +66,13 @@ class Source(Base):
                 'source__title': row[6],
                 'source__content': row[7],
                 })
+        if not len(candidata):
+            candidata.append({
+                'word': '1    list is empty :)',
+                'source__status': status,
+                'source__category': category,
+                'source__type': the_type,
+                })
         return candidata
 
     def highlight(self):
@@ -84,9 +91,12 @@ class Source(Base):
 
 def addDBConnect(action):
     def wrapper(self, context):
+        if context['targets'][0].get('source__id', None) is None:
+            return
         conn = sqlite3.connect(self.vim.call('buzuo#get_database_path'))
-        action(self, context, conn)
+        res = action(self, context, conn)
         conn.close()
+        return res
     return wrapper
 
 
@@ -98,6 +108,28 @@ class Kind(BaseKind):
         self.persist_actions = ['toggle', 'edit', 'delete', 'add']
         self.redraw_actions = ['toggle', 'edit', 'delete', 'add']
         self.name = 'buzuo'
+
+    def action_change_category(self, context):
+        target = context['targets'][0]
+        category = util.input(self.vim, context, 'Enter category: ')
+        if not len(category):
+            return
+        self.vim.command('Denite buzuo:%s:%s:%s' %
+                (category, target['source__type'], target['source__status']))
+
+    def action_change_type(self, context):
+        target = context['targets'][0]
+        the_type = util.input(self.vim, context, 'Enter type: ')
+        if not len(the_type):
+            return
+        self.vim.command('Denite buzuo:%s:%s:%s' %
+                (target['source__category'], the_type, target['source__status']))
+
+    def action_change_status(self, context):
+        target = context['targets'][0]
+        status = 'done' if target['source__status'] == 'pending' else 'pending'
+        self.vim.command('Denite buzuo:%s:%s:%s' %
+                (target['source__category'], target['source__type'], status))
 
     @addDBConnect
     def action_toggle(self, context, conn):
