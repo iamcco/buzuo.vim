@@ -7,7 +7,9 @@
 "===============================================================================
 scriptencoding utf-8
 
-if exists('g:buzuo_loaded') && g:buzuo_loaded
+let g:buzuo_debug = 1
+if exists('g:buzuo_debug') && g:buzuo_debug
+elseif exists('g:buzuo_loaded') && g:buzuo_loaded
     finish
 endif
 let g:buzuo_loaded = 1
@@ -15,19 +17,17 @@ let g:buzuo_loaded = 1
 let s:save_cpoptions = &cpoptions
 set cpoptions&vim
 
-let g:buzuo_database_path = '~/.todo/todo.sqlite'
-
-function! s:trigger_denite(param) abort
-    execute 'Denite Buzuo:' . a:param
-endfunction
+let g:buzuo_database_path = '~/.buzuo/buzuo.database'
+let g:buzuo_category_candidate = join(['work', 'study', 'person'], "\n")
+let g:buzuo_category_default = 'work'
+let g:buzuo_type_candidate = join(['now', 'shortterm', 'longterm'], "\n")
+let g:buzuo_type_default = 'now'
 
 function! s:get_complete_candidate(A, L, P) abort
-    return buzuo#get_field('status')
+    return join([ 'init', 'add', 'list' ], "\n")
 endfunction
 
-command! -nargs=0 BuzuoInit :call buzuo#create_data_base()
-command! -nargs=1 -complete=custom,s:get_complete_candidate Buzuo :call s:trigger_denite(<q-args>)
-
+command! -nargs=1 -complete=custom,s:get_complete_candidate Buzuo :call buzuo#start(<q-args>)
 
 let s:save_cpoptions = &cpoptions
 set cpoptions&vim

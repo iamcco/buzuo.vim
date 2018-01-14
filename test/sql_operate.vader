@@ -48,7 +48,7 @@ Execute (crate database):
   let b:expect_schema = 'CREATE TABLE buzuo'
     \. '(id INTEGER PRIMARY KEY AUTOINCREMENT,'
     \. 'create_time INTEGER,modify_time INTEGER,'
-    \. 'status,tag,type,title,content);'
+    \. 'status,category,type,title,content);'
 
   " get schema of database
   let b:buzuo_schema = system(join([
@@ -60,13 +60,13 @@ Execute (crate database):
   AssertEqual b:expect_schema, Trim(b:buzuo_schema)
 
 Execute (insert item):
-  "insert item: tag: word, type: now, title: test insert
+  "insert item: category: word, type: now, title: test insert
   silent call buzuo#insert_item('word', 'now', 'test insert')
 
   let b:sql_select = system(join([
         \ b:sqlite,
         \ buzuo#get_database_path(),
-        \ '"select id,tag,type,title from buzuo"'
+        \ '"select id,category,type,title from buzuo"'
         \], ' '))
   let b:sql_select_expect = '1|word|now|test insert'
 
@@ -86,10 +86,10 @@ Execute (update item):
   AssertEqual b:sql_select_expect, Trim(b:sql_select)
 
 Execute (get distinct field):
-  "insert new tag: personal
+  "insert new category: personal
   silent call buzuo#insert_item('personal', 'now', 'test insert')
   "update title field from `test insert` to `test update title`
-  let b:distinct_field = buzuo#get_distinct_field('tag')
+  let b:distinct_field = buzuo#get_distinct_field('category')
 
   let b:distinct_field_expect = "word[\n\r]*personal"
 

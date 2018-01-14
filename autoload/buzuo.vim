@@ -62,18 +62,6 @@ endfunction
 
 "create database
 function! buzuo#create_data_base() abort
-    "sql to create table type [now, later, longterm]
-    let l:sql_create_table = 'CREATE TABLE IF NOT EXISTS buzuo('
-                \. 'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-                \. 'create_time INTEGER,'
-                \. 'modify_time INTEGER,'
-                \. 'status,'
-                \. 'tag,'
-                \. 'type,'
-                \. 'title,'
-                \. 'content'
-                \. ')'
-
     "get database path
     let l:p = buzuo#get_database_path()
     "check database
@@ -82,6 +70,19 @@ function! buzuo#create_data_base() abort
                     \. g:buzuo_database_path
                     \. ' already exists')
     endif
+
+    "sql to create table type [now, later, longterm]
+    let l:sql_create_table = 'CREATE TABLE IF NOT EXISTS buzuo('
+                \. 'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                \. 'create_time INTEGER,'
+                \. 'modify_time INTEGER,'
+                \. 'status,'
+                \. 'category,'
+                \. 'type,'
+                \. 'title,'
+                \. 'content'
+                \. ')'
+
     "create directory if not exists
     let l:p_dir = fnamemodify(l:p, ':p:h')
     if !isdirectory(l:p_dir)
@@ -89,29 +90,25 @@ function! buzuo#create_data_base() abort
     endif
     "cmd to create database
     let l:cmd_create_database = s:get_cmd_sql(s:quote(l:sql_create_table))
-    if s:system(l:cmd_create_database) !=# -1
-        echo 'database create success!'
-    endif
+    return s:system(l:cmd_create_database)
 endfunction
 
 "insert new item
-function! buzuo#insert_item(tag, type, title) abort
+function! buzuo#insert_item(category, type, title) abort
     let l:now_time = localtime()
     let l:sql_insert_item = 'INSERT INTO '
-                \. 'buzuo(create_time,modify_time,status,tag,type,title)'
+                \. 'buzuo(create_time,modify_time,status,category,type,title)'
                 \. 'VALUES(%s,%s,%s,%s,%s,%s)'
     let l:sql_insert_item = printf(l:sql_insert_item,
                 \ l:now_time,
                 \ l:now_time,
                 \ s:quote('pending'),
-                \ s:quote(a:tag),
+                \ s:quote(a:category),
                 \ s:quote(a:type),
                 \ s:quote(a:title),
                 \)
     let l:cmd_insert_item = s:get_cmd_sql(s:quote(l:sql_insert_item))
-    if s:system(l:cmd_insert_item) !=# -1
-        echo 'done'
-    endif
+    return s:system(l:cmd_insert_item)
 endfunction
 
 "update item
@@ -124,9 +121,7 @@ function! buzuo#update_item(id, field, value) abort
                 \ s:quote(a:value),
                 \ a:id)
     let l:cmd_update_item = s:get_cmd_sql(s:quote(l:sql_update_item))
-    if s:system(l:cmd_update_item) !=# -1
-        echo 'done'
-    endif
+    return s:system(l:cmd_update_item)
 endfunction
 
 "get field
@@ -139,4 +134,76 @@ function! buzuo#get_distinct_field(field) abort
         return ''
     endif
     return l:output
+endfunction
+
+" input
+function! buzuo#input(param) abort
+    let l:res = ''
+    call inputsave()
+    let l:res = input(a:param)
+    call inputrestore()
+    redraw
+    return l:res
+endfunction
+
+" start
+function! buzuo#start(args) abort
+    try
+        let l:args = split(a:args, ':')
+        let l:type = l:args[0]
+        let l:args = [join(l:args[1:-1], ':')]
+        call call(function('buzuo#' . l:type), l:args)
+    catch /[eE]700/
+        call s:echo_error('option not exists')
+    catch /.*/
+        call s:echo_error(v:exception)
+    endtry
+endfunction
+
+" init database
+function! buzuo#init() abort
+    if buzuo#create_data_base() !=# -1
+        echo 'create database success! (ง •̀_•́)ง'
+    endif
+endfunction
+
+function! buzuo#add_category_candidate(A, L, P) abort
+    return g:buzuo_category_candidate
+endfunction
+
+function! buzuo#add_type_candidate(A, L, P) abort
+    return g:buzuo_type_candidate
+endfunction
+
+" add item
+function! buzuo#add() abort
+    let l:title = buzuo#input({
+                \ 'prompt': 'Enter title: ',
+                \})
+    if l:title ==# ''
+        echo 'cancel'
+        return 0
+    endif
+    let l:category = buzuo#input({
+                \ 'prompt': 'Enter category: ',
+                \ 'completion': 'custom,buzuo#add_category_candidate'
+                \})
+    if l:category ==# ''
+        let l:category = g:buzuo_category_default
+    endif
+    let l:type = buzuo#input({
+                \ 'prompt': 'Enter type: ',
+                \ 'completion': 'custom,buzuo#add_type_candidate'
+                \})
+    if l:type ==# ''
+        let l:type = g:buzuo_type_default
+    endif
+    if buzuo#insert_item(l:category, l:type, l:title) !=# -1
+        echo 'add item success! (ง •̀_•́)ง'
+    endif
+endfunction
+
+" Denite buzuo
+function! buzuo#list(param) abort
+    execute 'Denite buzuo:' . a:param
 endfunction
