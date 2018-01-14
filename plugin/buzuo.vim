@@ -7,7 +7,6 @@
 "===============================================================================
 scriptencoding utf-8
 
-let g:buzuo_debug = 1
 if exists('g:buzuo_debug') && g:buzuo_debug
 elseif exists('g:buzuo_loaded') && g:buzuo_loaded
     finish
@@ -17,11 +16,25 @@ let g:buzuo_loaded = 1
 let s:save_cpoptions = &cpoptions
 set cpoptions&vim
 
-let g:buzuo_database_path = '~/.buzuo/buzuo.database'
-let g:buzuo_category_candidate = join(['work', 'study', 'person'], "\n")
-let g:buzuo_category_default = 'work'
-let g:buzuo_type_candidate = join(['now', 'shortterm', 'longterm'], "\n")
-let g:buzuo_type_default = 'now'
+if !exists('g:buzuo_database_path')
+    let g:buzuo_database_path = '~/.buzuo/buzuo.database'
+endif
+
+if !exists('g:buzuo_category_candidate')
+    let g:buzuo_category_candidate = ['work', 'study', 'personal']
+endif
+
+if !exists('g:buzuo_category_default')
+    let g:buzuo_category_default = get(g:buzuo_category_candidate, '0', 'default')
+endif
+
+if !exists('g:buzuo_type_candidate')
+    let g:buzuo_type_candidate = ['now', 'shortterm', 'longterm']
+endif
+
+if !exists('g:buzuo_type_default')
+    let g:buzuo_type_default = get(g:buzuo_type_candidate, '0', 'default')
+endif
 
 function! s:get_complete_candidate(A, L, P) abort
     return join([ 'init', 'add', 'list' ], "\n")

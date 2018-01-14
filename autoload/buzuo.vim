@@ -161,40 +161,50 @@ function! buzuo#start(args) abort
 endfunction
 
 " init database
-function! buzuo#init() abort
+function! buzuo#init(param) abort
     if buzuo#create_data_base() !=# -1
         echo 'create database success! (ง •̀_•́)ง'
     endif
 endfunction
 
 function! buzuo#add_category_candidate(A, L, P) abort
-    return g:buzuo_category_candidate
+    return join(g:buzuo_category_candidate, "\n")
 endfunction
 
 function! buzuo#add_type_candidate(A, L, P) abort
-    return g:buzuo_type_candidate
+    return join(g:buzuo_type_candidate, "\n")
 endfunction
 
 " add item
-function! buzuo#add() abort
-    let l:title = buzuo#input({
-                \ 'prompt': 'Enter title: ',
-                \})
+function! buzuo#add(param) abort
+    let l:args = split(a:param, ':')
+    let l:category = get(l:args, '0', '')
+    let l:type = get(l:args, '1', '')
+    let l:title = join(l:args[2:], ':')
+    if l:title ==# ''
+        let l:title = buzuo#input({
+                    \ 'prompt': 'Enter title: ',
+                    \})
+    endif
     if l:title ==# ''
         echo 'cancel'
         return 0
     endif
-    let l:category = buzuo#input({
-                \ 'prompt': 'Enter category: ',
-                \ 'completion': 'custom,buzuo#add_category_candidate'
-                \})
+    if l:category ==# ''
+        let l:category = buzuo#input({
+                    \ 'prompt': 'Enter category: ',
+                    \ 'completion': 'custom,buzuo#add_category_candidate'
+                    \})
+    endif
     if l:category ==# ''
         let l:category = g:buzuo_category_default
     endif
-    let l:type = buzuo#input({
-                \ 'prompt': 'Enter type: ',
-                \ 'completion': 'custom,buzuo#add_type_candidate'
-                \})
+    if l:type ==# ''
+        let l:type = buzuo#input({
+                    \ 'prompt': 'Enter type: ',
+                    \ 'completion': 'custom,buzuo#add_type_candidate'
+                    \})
+    endif
     if l:type ==# ''
         let l:type = g:buzuo_type_default
     endif
