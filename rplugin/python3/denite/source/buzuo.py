@@ -109,25 +109,27 @@ class Kind(BaseKind):
         self.persist_actions = ['toggle', 'edit', 'delete', 'add']
         self.redraw_actions = ['toggle', 'edit', 'delete', 'add']
 
-    def action_change_category(self, context):
+    def action_switch_category(self, context):
         target = context['targets'][0]
-        category = util.input(self.vim, context, 'Enter category: ')
+        category = util.input(
+                self.vim, context, 'Enter category: ', '', 'custom,buzuo#add_category_candidate')
         if not len(category):
             return
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, target['source__type'], target['source__status']]},
             ])
 
-    def action_change_type(self, context):
+    def action_switch_type(self, context):
         target = context['targets'][0]
-        the_type = util.input(self.vim, context, 'Enter type: ')
+        the_type = util.input(
+                self.vim, context, 'Enter type: ', '', 'custom,buzuo#add_type_candidate')
         if not len(the_type):
             return
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [target['source__category'], the_type, target['source__status']]},
             ])
 
-    def action_change_status(self, context):
+    def action_switch_status(self, context):
         target = context['targets'][0]
         status = 'done' if target['source__status'] == 'pending' else 'pending'
         context['sources_queue'].append([
@@ -153,7 +155,17 @@ class Kind(BaseKind):
         title = util.input(self.vim, context, 'Change to: ', target['source__title'])
         if not len(title):
             return
-        cursor.execute('UPDATE buzuo SET title = ? WHERE id = ?', (title, target['source__id']))
+        category = util.input(
+                self.vim, context, 'Enter category: ', '', 'custom,buzuo#add_category_candidate')
+        if not len(category):
+            category = target['source__category']
+        the_type = util.input(
+                self.vim, context, 'Enter type: ', '', 'custom,buzuo#add_type_candidate')
+        if not len(the_type):
+            the_type = target['source__type']
+        cursor.execute(
+                'UPDATE buzuo SET title = ?, category = ?, type = ? WHERE id = ?',
+                (title, category, the_type, target['source__id']))
         conn.commit()
 
     @addDBConnect
