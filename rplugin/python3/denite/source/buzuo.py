@@ -41,11 +41,11 @@ class Source(Base):
         database = self.vim.call('buzuo#get_database_path')
         if not os.path.isfile(database):
             raise Exception('数据库文件不存在，请执行 :Buzuo init')
-        context['__db_conn'] = sqlite3.connect(database)
+        self.__db_conn = sqlite3.connect(database)
 
     def on_close(self, context):
-        context['__db_conn'].close()
-        context['__db_conn'] = None
+        self.__db_conn.close();
+        self.__db_conn = None
 
     def gather_candidates(self, context):
         sql = 'SELECT * FROM buzuo WHERE {s[category]} and {s[type]} and {s[status]} ORDER BY id desc'
@@ -54,7 +54,7 @@ class Source(Base):
                 'type': 'type = ?',
                 'status': 'status = ?',
                 }
-        conn = context['__db_conn']
+        conn = self.__db_conn
         cursor = conn.cursor()
         args = dict(enumerate(context['args']))
         category = str(args.get(0, 'work'))
