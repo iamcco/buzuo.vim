@@ -129,8 +129,9 @@ class Kind(BaseKind):
 
         self.name = 'buzuo'
         self.default_action = 'toggle'
-        self.persist_actions = ['toggle', 'edit', 'delete', 'add']
-        self.redraw_actions = ['toggle', 'edit', 'delete', 'add']
+        self.persist_actions = ['preview', 'toggle', 'edit_title', 'delete', 'add']
+        self.redraw_actions = ['toggle', 'edit_title', 'delete', 'add']
+        self.__preview_id = -1
 
     def action_list_all(self, context):
         context['sources_queue'].append([
@@ -174,6 +175,16 @@ class Kind(BaseKind):
             ])
 
     @doNothingWithoutId
+    def action_preview(self, context):
+        target = context['targets'][0]
+        if self.__preview_id is target['source__id']:
+            self.__preview_id = -1
+            self.vim.call('buzuo#preview#close')
+        else:
+            self.__preview_id = target['source__id']
+            self.vim.call('buzuo#preview#open', target['source__content'])
+
+    @doNothingWithoutId
     @addDBConnect
     def action_toggle(self, context, conn):
         cursor = conn.cursor()
@@ -186,8 +197,13 @@ class Kind(BaseKind):
         conn.commit()
 
     @doNothingWithoutId
+    def action_edit_content(self, context):
+        target = context['targets'][0]
+        self.vim.call('buzuo#edit#open', target['source__id'], target['source__content'])
+
+    @doNothingWithoutId
     @addDBConnect
-    def action_edit(self, context, conn):
+    def action_edit_title(self, context, conn):
         cursor = conn.cursor()
         target = context['targets'][0]
         title = util.input(self.vim, context, 'Change to: ', target['source__title'])
