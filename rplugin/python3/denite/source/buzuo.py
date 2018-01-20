@@ -128,7 +128,7 @@ class Kind(BaseKind):
         super().__init__(vim)
 
         self.name = 'buzuo'
-        self.default_action = 'toggle'
+        self.default_action = 'edit_content'
         self.persist_actions = ['preview', 'toggle', 'edit_title', 'delete', 'add']
         self.redraw_actions = ['toggle', 'edit_title', 'delete', 'add']
         self.__preview_id = -1
