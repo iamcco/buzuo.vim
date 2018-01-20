@@ -11,6 +11,7 @@ from denite import util
 from .base import Base
 from ..kind.base import Base as BaseKind
 
+# this function come from https://github.com/neoclide/todoapp.vim
 def timeago(now, seconds):
     diff = now - seconds
     if diff <= 0:
