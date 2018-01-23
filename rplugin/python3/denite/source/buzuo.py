@@ -82,7 +82,7 @@ class Source(Base):
                 'source__type': row[5],
                 'source__title': row[6],
                 'source__content': row[7],
-                'source__args': args,
+                'source__args': '%s:%s:%s' % (category, the_type, status),
                 })
         if not len(candidata):
             candidata.append({
@@ -90,7 +90,7 @@ class Source(Base):
                 'source__status': status,
                 'source__category': category,
                 'source__type': the_type,
-                'source__args': args,
+                'source__args': '%s:%s:%s' % (category, the_type, status),
                 })
         return candidata
 
@@ -145,9 +145,9 @@ class Kind(BaseKind):
                 self.vim, context, 'Enter category: ', '', 'custom,buzuo#add_category_candidate')
         if not len(category):
             return
-        args = target['source__args']
-        the_type = str(args.get(1, 'now'))
-        status = str(args.get(2, 'pending'))
+        args = target['source__args'].split(':')
+        the_type = args[1]
+        status = args[2]
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
@@ -158,9 +158,9 @@ class Kind(BaseKind):
                 self.vim, context, 'Enter type: ', '', 'custom,buzuo#add_type_candidate')
         if not len(the_type):
             return
-        args = target['source__args']
-        category = str(args.get(0, 'work'))
-        status = str(args.get(2, 'pending'))
+        args = target['source__args'].split(':')
+        category = args[0]
+        status = args[2]
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
@@ -168,9 +168,9 @@ class Kind(BaseKind):
     def action_switch_status(self, context):
         target = context['targets'][0]
         status = 'done' if target['source__status'] == 'pending' else 'pending'
-        args = target['source__args']
-        category = str(args.get(0, 'work'))
-        the_type = str(args.get(1, 'now'))
+        args = target['source__args'].split(':')
+        category = args[0]
+        the_type = args[1]
         context['sources_queue'].append([
             {'name': 'buzuo', 'args': [category, the_type, status]},
             ])
