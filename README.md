@@ -42,7 +42,6 @@ Install sqlite3:
 * `:Buzuo list` same as `:Buzuo`
 * `:Buzuo init` create the database, you need to do this once install plugin
 * `:Buzuo add` add an todo item, it can take args to specify cateogry and type: `:Buzuo add:work` or `:Buzuo add:work:now`
-* `:Save` save content when in buzuo buffer
 
 **Denite source:**
 

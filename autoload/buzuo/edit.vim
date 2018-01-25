@@ -12,22 +12,23 @@ function! s:save_content() abort
     let l:content = join(getline(1, '$'), "\n")
     call buzuo#update_item(b:buzuo_id, 'content', l:content)
     if v:shell_error ==# 0
+        " save success and set nomodified
+        setl nomodified
         echo 'save content success! (ง •̀_•́)ง'
     endif
 endfunction
 
 " config the buffer
 function! s:config() abort
-    setl buftype=nofile
     setl bufhidden=hide
     setl noswapfile
     setl noreadonly
     setl modifiable
-endfunction
-
-" config Save command
-function! s:map() abort
-    command! -nargs=0 Save call s:save_content()
+    setl nomodified
+    augroup buzuo_edit_save
+        autocmd!
+        autocmd BufWriteCmd <buffer> call s:save_content()
+    augroup END
 endfunction
 
 " open edit buffer
@@ -41,5 +42,4 @@ function! buzuo#edit#open(id, content) abort
         call setline(1, l:lines)
     endif
     call s:config()
-    call s:map()
 endfunction

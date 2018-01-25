@@ -22,7 +22,11 @@ endfunction
 " quote
 function! s:quote(str, ...) abort
     let l:wrap = get(a:, '1', '"')
-    return l:wrap . escape(a:str, "'\"") . l:wrap
+    let l:is_escape = get(a:, '2', v:true)
+    if l:is_escape
+        return l:wrap . escape(a:str, "'\"") . l:wrap
+    endif
+    return l:wrap . a:str . l:wrap
 endfunction
 
 " format cmd
@@ -89,7 +93,7 @@ function! buzuo#create_data_base() abort
         call mkdir(l:p_dir, 'p')
     endif
     "cmd to create database
-    let l:cmd_create_database = s:get_cmd_sql(s:quote(l:sql_create_table))
+    let l:cmd_create_database = s:get_cmd_sql(s:quote(l:sql_create_table, "'", v:false))
     return s:system(l:cmd_create_database)
 endfunction
 
@@ -107,7 +111,7 @@ function! buzuo#insert_item(category, type, title) abort
                 \ s:quote(a:type),
                 \ s:quote(a:title),
                 \)
-    let l:cmd_insert_item = s:get_cmd_sql(s:quote(l:sql_insert_item))
+    let l:cmd_insert_item = s:get_cmd_sql(s:quote(l:sql_insert_item, "'", v:false))
     return s:system(l:cmd_insert_item)
 endfunction
 
@@ -120,7 +124,7 @@ function! buzuo#update_item(id, field, value) abort
                 \ a:field,
                 \ s:quote(a:value),
                 \ a:id)
-    let l:cmd_update_item = s:get_cmd_sql(s:quote(l:sql_update_item))
+    let l:cmd_update_item = s:get_cmd_sql(s:quote(l:sql_update_item, "'", v:false))
     return s:system(l:cmd_update_item)
 endfunction
 
@@ -128,7 +132,7 @@ endfunction
 function! buzuo#get_distinct_field(field) abort
     "get tags
     let l:sql_query_tags = 'SELECT DISTINCT(' . a:field . ') FROM buzuo'
-    let l:cmd_get_tags = s:get_cmd_sql(s:quote(l:sql_query_tags))
+    let l:cmd_get_tags = s:get_cmd_sql(s:quote(l:sql_query_tags, "'", v:false))
     let l:output = s:system(l:cmd_get_tags)
     if l:output ==# -1
         return ''
