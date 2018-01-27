@@ -62,14 +62,11 @@ class Source(Base):
         the_type = str(args.get(1, 'now'))
         status = str(args.get(2, 'pending'))
         if category == '/':
-            format_sql['category'] = '1 = ?'
-            category = 1
+            format_sql['category'] = '"%s" = ?' % category
         if the_type == '/':
-            format_sql['type'] = '1 = ?'
-            the_type = 1
+            format_sql['type'] = '"%s" = ?' % the_type
         if status == '/':
-            format_sql['status'] = '1 = ?'
-            status = 1
+            format_sql['status'] = '"%s" = ?' % status
         cursor.execute(sql.format(s=format_sql), (category, the_type, status))
         time_now = time.time()
         candidata = []
